@@ -17,10 +17,12 @@ class ExecutionKernel(object):
         self.dataloader_ = dataloader_
         self.model = model
 
-    def run(self):
-        grass_class_algo = GrassClassification(cfg_file=self.cfg_file, dataloader_=self.dataloader_, model=self.model)
-        res= grass_class_algo.process() 
-        return res
+    def train(self):
+        self.grass_class_algo = GrassClassification(cfg_file=self.cfg_file, dataloader_=self.dataloader_, model=self.model)
+        self.grass_class_algo.process() 
+    
+    def eval(self, test_data_path):
+        self.grass_class_algo.prediction(test_data_path=test_data_path)
     
 if __name__ == "__main__":
 
@@ -29,17 +31,19 @@ if __name__ == "__main__":
     grass_cfg = read_cfg(cfg_path=cfg_path)
     
     # === read data ===
-    data_path = 'C:/Users/murray/Desktop/kaggle_grass_classification/src/main/python/data/train'
-    grass_loader = GrassTrainTestDataloader(data_path=data_path, 
-                                                split_ratio=grass_cfg[CfgEnum.split_ratio],
-                                                batch_size=grass_cfg[CfgEnum.batch_size]
-                                            )
+    train_data_path = 'C:/Users/murray/Desktop/kaggle_grass_classification/src/main/python/data/train'
+    test_data_path = 'C:/Users/murray/Desktop/kaggle_grass_classification/src/main/python/data/test'
+
+    grass_loader = GrassTrainTestDataloader(data_path=train_data_path, 
+                                            split_ratio=grass_cfg[CfgEnum.split_ratio],
+                                            batch_size=grass_cfg[CfgEnum.batch_size]
+                                           )
     # === read model ===
     grass_model = GrassCNN(num_classes=grass_cfg[CfgEnum.num_classes])
 
-    # === run ===
-    grass_kernel = ExecutionKernel(cfg_file=grass_cfg, dataloader_=grass_loader, model=grass_model)
-    res = grass_kernel.run()
-    print(res)
-    
     # === start training ===
+    grass_kernel = ExecutionKernel(cfg_file=grass_cfg, dataloader_=grass_loader, model=grass_model)
+    grass_kernel.train()
+    
+    # === start evaluation ===
+    grass_kernel.eval(test_data_path=test_data_path)

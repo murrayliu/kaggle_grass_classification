@@ -14,6 +14,7 @@ class GrassDataset(Dataset):
         self.data_path = data_path
         self.classes = sorted(os.listdir(data_path))
         self.class_to_idx = {cls: i for i, cls in enumerate(self.classes)}
+        self.idx_to_class = {i: cls for i, cls in enumerate(self.classes)}
         self.images = self.load_images()
 
     def load_images(self):
@@ -51,14 +52,20 @@ class GrassTrainTestDataloader(object):
         self.shuffle = shuffle
 
     def get_dataloader(self):
-        full_dataset = GrassDataset(data_path=self.data_path)
-
+        self.full_dataset = GrassDataset(data_path=self.data_path)
+        
         # === Split the dataset ===
-        train_size = int(self.split_ratio * len(full_dataset)) 
-        test_size = len(full_dataset) - train_size
-        train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
+        train_size = int(self.split_ratio * len(self.full_dataset)) 
+        test_size = len(self.full_dataset) - train_size
+        train_dataset, test_dataset = torch.utils.data.random_split(self.full_dataset, [train_size, test_size])
         
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=self.shuffle)
         test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=self.shuffle)
 
         return train_loader, test_loader
+    
+    def get_idx_to_classstr_dict(self):
+
+        return self.full_dataset.idx_to_class
+
+    

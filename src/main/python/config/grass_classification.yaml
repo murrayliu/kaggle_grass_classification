@@ -7,3 +7,4 @@ grass:
   # === training setting ===
   learning_rate: 0.001
   num_epochs: 100
+  early_stop_counts: 10
