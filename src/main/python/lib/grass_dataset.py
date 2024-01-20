@@ -50,10 +50,9 @@ class GrassTrainTestDataloader(object):
         self.split_ratio = split_ratio
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.full_dataset = GrassDataset(data_path=self.data_path)
 
     def get_dataloader(self):
-        self.full_dataset = GrassDataset(data_path=self.data_path)
-        
         # === Split the dataset ===
         train_size = int(self.split_ratio * len(self.full_dataset)) 
         test_size = len(self.full_dataset) - train_size

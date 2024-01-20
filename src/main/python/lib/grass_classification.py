@@ -3,6 +3,7 @@ import glob
 import yaml
 import torch
 import numpy as np
+import seaborn as sns
 import torch.nn as nn
 from enum import Enum
 from PIL import Image
@@ -12,6 +13,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from sklearn.metrics import f1_score
+from sklearn.metrics import confusion_matrix, classification_report
 
 class GrassClassification(object):
     def __init__(self, cfg_file, dataloader_, model):
@@ -33,6 +35,8 @@ class GrassClassification(object):
                                                           self.model_setting_str)
         self.weight_path = '{}/{}.pth'.format(self.review_path, self.model_setting_str)
 
+        self.idx_to_classstr_dict = self.dataloader_.get_idx_to_classstr_dict()
+        
         print('Device: {}'.format(self.device))
 
     def process(self):
@@ -48,17 +52,22 @@ class GrassClassification(object):
         for cur_epoch in range(self.cfg[CfgEnum.num_epochs]):
    
             train_f1 = self.train_session(train_loader=train_loader, cur_epoch=cur_epoch)
-            test_f1 = self.test_session(test_loader=test_loader)
+            test_f1, all_preds, all_labels = self.test_session(test_loader=test_loader)
             train_f1_list.append(train_f1)
             test_f1_list.append(test_f1)
-            self.review_figure(cur_epoch, best_epoch, train_f1_list, test_f1_list)
+            self.review_figure(cur_epoch, best_epoch, best_f1, train_f1_list, test_f1_list)
 
             # === save best model ===
             if test_f1 > best_f1:
                 early_stop_counts = self.cfg[CfgEnum.early_stop_counts]
                 best_epoch = cur_epoch
                 best_f1 = test_f1
+                
+                # --- save model weight ---
                 torch.save(self.model.state_dict(), self.weight_path)
+                
+                # --- save confusion matrix ---
+                self.review_confusion_matrix(all_preds, all_labels)
 
             # === ealry stop ===
             early_stop_counts -= 1
@@ -112,7 +121,7 @@ class GrassClassification(object):
         f1_score_ = f1_score(all_labels, all_preds, average='macro')
         print(f"F1-score on the test set: {f1_score_ * 100:.2f}%")
 
-        return f1_score_
+        return f1_score_, all_preds, all_labels
 
     def prediction(self, test_data_path):
 
@@ -141,15 +150,13 @@ class GrassClassification(object):
             raw_image = transform(raw_image)
 
             # --- loop over all test images ---
-            idx_to_classstr_dict = self.dataloader_.get_idx_to_classstr_dict()
-
             with torch.no_grad():
                 raw_image = torch.unsqueeze(raw_image, 0) # set batch_size=1 to fit model
                 raw_image = raw_image.to(self.device)
                 outputs = self.model(raw_image)
                 _, predicted = torch.max(outputs, 1)
                 predict_numpy = predicted.cpu().numpy()
-                predict_list = [base_filename, idx_to_classstr_dict[int(predict_numpy[0])]]
+                predict_list = [base_filename, self.idx_to_classstr_dict[int(predict_numpy[0])]]
             
             submission_list.append(predict_list)
 
@@ -160,7 +167,7 @@ class GrassClassification(object):
         np.savetxt(csv_review_path, submission_list, delimiter=',', fmt='%s', header=','.join(headers), comments='')
         print(f'Data has been written to {csv_review_path}')
 
-    def review_figure(self, cur_epoch, best_epoch, train_f1_list, test_f1_list):
+    def review_figure(self, cur_epoch, best_epoch, best_f1, train_f1_list, test_f1_list):
 
         # === make folder ===
         figure_name = '{}.png'.format(self.model_setting_str)
@@ -173,7 +180,7 @@ class GrassClassification(object):
         plt.figure() 
         plt.plot(epoch_idx, train_f1_list, label="train f1-score",  color='blue')
         plt.plot(epoch_idx, test_f1_list, label="test f1-score",  color='red')
-        plt.title('Grass classification (best epoch: {})'.format(best_epoch))
+        plt.title('Grass classification (best epoch/f1-score: {}/{})'.format(best_epoch, best_f1))
         plt.xlabel('Epoch')
         plt.ylabel('f1-score')
         plt.xlim(0, self.cfg[CfgEnum.num_epochs])
@@ -182,8 +189,19 @@ class GrassClassification(object):
         plt.savefig(figure_path)
         plt.close()
 
-    
-
+    def review_confusion_matrix(self, all_preds, all_labels):
+        
+        # --- Plot confusion matrix with class names as titles ---
+        conf_matrix = confusion_matrix(all_labels, all_preds)
+        matrix_path = '{}/confusion_matrix.png'.format(self.review_path)
+        classes_name = list(self.idx_to_classstr_dict.values())
+        plt.figure(figsize=(24, 24))
+        sns.set(font_scale=1.2)
+        sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", xticklabels=classes_name, yticklabels=classes_name)
+        plt.xlabel("Predicted")
+        plt.ylabel("Actual")
+        plt.title("Confusion Matrix")
+        plt.savefig(matrix_path)
 
 class CfgEnum(str, Enum):
     # === dataloader ===
