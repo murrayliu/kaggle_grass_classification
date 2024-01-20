@@ -1,3 +1,13 @@
-# kaggle_grass_classification
-
+# Kaggle Grass Classification
+---
 Source: https://www.kaggle.com/competitions?searchQuery=image
+
+
+# Working log
+---
+
+## 1/20
+---
+* finish basic training scheme and input/output format (10:40)
+* add confusion matrix/f1-score
+* optimized with image process skills

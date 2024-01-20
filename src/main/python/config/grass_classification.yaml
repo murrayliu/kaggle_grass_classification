@@ -1,0 +1,10 @@
+grass:
+  # === dataloader ===
+  split_ratio: 0.8
+  batch_size: 32
+  num_classes: 12
+  
+  # === training setting ===
+  learning_rate: 0.001
+  num_epochs: 100
+  early_stop_counts: 10
