@@ -7,7 +7,8 @@ import os
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, SubsetRandomSampler
 import torchvision.transforms as transforms
-
+import cv2
+from matplotlib import pyplot as plt
 
 class GrassDataset(Dataset):
     def __init__(self, data_path):
@@ -31,9 +32,10 @@ class GrassDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        img_path, label = self.images[idx]
-        image = Image.open(img_path).convert("RGB")
-
+        image_path, label = self.images[idx]
+        # image = Image.open(img_path).convert("RGB")
+        image = self.preprocess_image(image_path)
+        
         # === transform ===
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
@@ -43,6 +45,24 @@ class GrassDataset(Dataset):
 
         return image, label
     
+    def preprocess_image(self, image_path):
+        bgr_image = cv2.imread(image_path)
+        # rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+        hsv_image = cv2.cvtColor(bgr_image,cv2.COLOR_BGR2HSV)
+
+        # === extract green area ===
+        lower = (25,40,50)
+        upper = (75,255,255)
+        mask_image = cv2.inRange(hsv_image,lower,upper)
+        struc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(11,11))
+        blur_mask_image = cv2.morphologyEx(mask_image,cv2.MORPH_CLOSE,struc)
+
+        # === mask raw image ===
+        boolean = blur_mask_image == 0
+        bgr_image[boolean] = (0,0,0)
+        bgr_image = Image.fromarray(bgr_image)
+        
+        return bgr_image
 
 class GrassTrainTestDataloader(object):
     def __init__(self, data_path, split_ratio, batch_size, shuffle=True):

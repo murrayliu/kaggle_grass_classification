@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 image_path = "C:/Users/murray/Desktop/kaggle_grass_classification/src/main/python/data/train/Black-grass/37d85d833.png"
 bgr_image = cv2.imread(image_path)
 rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
-hsv_image = cv2.cvtColor(bgr_image,cv2.COLOR_BGR2HSV)
+hsv_image = cv2.cvtColor(rgb_image,cv2.COLOR_BGR2HSV)
 
 # === extract green area ===
 lower = (25,40,50)
