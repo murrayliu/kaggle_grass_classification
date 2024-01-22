@@ -1,5 +1,5 @@
 # Kaggle Grass Classification
-Source: https://www.kaggle.com/competitions?searchQuery=image
+* Source: https://www.kaggle.com/competitions?searchQuery=image
 ---
 
 # Working log
