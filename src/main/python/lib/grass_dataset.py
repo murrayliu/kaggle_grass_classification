@@ -37,9 +37,17 @@ class GrassDataset(Dataset):
         image = self.preprocess_image(image_path)
         
         # === transform ===
+        transform_list = [
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+            transforms.RandomRotation(degrees=30),
+        ]
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
+            transforms.RandomApply(transform_list, p=0.5),
             transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
         image = transform(image)
 
@@ -47,22 +55,25 @@ class GrassDataset(Dataset):
     
     def preprocess_image(self, image_path):
         bgr_image = cv2.imread(image_path)
-        # rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
-        hsv_image = cv2.cvtColor(bgr_image,cv2.COLOR_BGR2HSV)
+        rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+        blur_image = cv2.GaussianBlur(bgr_image, (5, 5), 0)
+        hsv_image = cv2.cvtColor(blur_image, cv2.COLOR_BGR2HSV)
 
         # === extract green area ===
         lower = (25,40,50)
         upper = (75,255,255)
         mask_image = cv2.inRange(hsv_image,lower,upper)
-        struc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(11,11))
-        blur_mask_image = cv2.morphologyEx(mask_image,cv2.MORPH_CLOSE,struc)
+        struc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
+        blur_mask_image = cv2.morphologyEx(mask_image,cv2.MORPH_CLOSE, struc)
 
         # === mask raw image ===
         boolean = blur_mask_image == 0
-        bgr_image[boolean] = (0,0,0)
-        bgr_image = Image.fromarray(bgr_image)
-        
-        return bgr_image
+        rgb_image[boolean] = (0 ,0, 0)
+        rgb_image = Image.fromarray(rgb_image)
+
+        # plt.imshow(rgb_image)
+        # plt.show()
+        return rgb_image
 
 class GrassTrainTestDataloader(object):
     def __init__(self, data_path, split_ratio, batch_size, shuffle=True):
