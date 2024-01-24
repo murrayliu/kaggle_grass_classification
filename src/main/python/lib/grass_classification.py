@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from sklearn.metrics import f1_score
 from sklearn.metrics import confusion_matrix, classification_report
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 class GrassClassification(object):
     def __init__(self, cfg_file, dataloader_, model):
@@ -24,11 +25,18 @@ class GrassClassification(object):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.criterion = nn.CrossEntropyLoss()
         self.model = model.to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.cfg[CfgEnum.learning_rate], weight_decay=self.cfg[CfgEnum.weight_decay])
+        # self.optimizer = optim.Adam(self.model.parameters(), lr=self.cfg[CfgEnum.learning_rate], weight_decay=self.cfg[CfgEnum.weight_decay])
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.cfg[CfgEnum.learning_rate])
         self.model_setting_str = "bs{}_lr{}_nepochs{}".format(self.cfg[CfgEnum.batch_size], 
                                                              self.cfg[CfgEnum.learning_rate], 
                                                              self.cfg[CfgEnum.num_epochs]
                                                             )
+        self.learning_rate_reduction = ReduceLROnPlateau(self.optimizer, 
+                                            mode='max',   # Use 'max' if monitoring accuracy, 'min' for loss
+                                            patience=self.cfg[CfgEnum.patience], 
+                                            verbose=True, 
+                                            factor=self.cfg[CfgEnum.factor], 
+                                            min_lr=self.cfg[CfgEnum.min_lr])
         
         self.review_path = "./output/review/{}/{}".format(datetime.today().strftime('%Y-%m-%d'),
                                                           self.model_setting_str)
@@ -113,6 +121,8 @@ class GrassClassification(object):
                 _, preds = torch.max(outputs, 1)
                 all_preds.extend(preds.cpu().numpy())
                 all_labels.extend(labels.cpu().numpy())
+                epoch_f1_score = f1_score(all_labels, all_preds, average='macro')
+                self.learning_rate_reduction.step(epoch_f1_score)
 
                 pbar.update(1) 
             pbar.close()  
@@ -211,7 +221,10 @@ class CfgEnum(str, Enum):
     num_epochs = "num_epochs"
     early_stop_counts = "early_stop_counts"
     weight_decay = "weight_decay"
-    
+    patience = "patience"
+    factor = "factor"
+    min_lr = "min_lr"
+
 def read_cfg(cfg_path):
     with open(cfg_path, 'r') as file:
         data = yaml.safe_load(file)
