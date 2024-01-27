@@ -12,3 +12,6 @@
 # Notice
 * use gaussian blur before transfer to hsv helps
 * normalize the image before feeding to model
+
+# test
+# test
