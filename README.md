@@ -13,20 +13,4 @@
 * use gaussian blur before transfer to hsv helps
 * normalize the image before feeding to model
 
-# test
-# test
-# test
-
-
-# test 1 
-## afasdf
-
-
-# test 2
-## asdfasdf
-
-
-# add dev1
-
-# branch 2
 
