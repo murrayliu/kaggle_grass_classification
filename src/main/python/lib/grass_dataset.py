@@ -37,18 +37,30 @@ class GrassDataset(Dataset):
         image = self.preprocess_image(image_path)
         
         # === transform ===
-        transform_list = [
-            transforms.RandomResizedCrop(224),
-            transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
-            transforms.RandomRotation(degrees=30),
-        ]
+        # transform_list = [
+        #     transforms.RandomResizedCrop(224),
+        #     transforms.RandomHorizontalFlip(),
+        #     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+        #     transforms.RandomRotation(degrees=30),
+        # ]
+        # transform = transforms.Compose([
+        #     transforms.Resize((224, 224)),
+        #     # transforms.RandomApply(transform_list, p=0.5),
+        #     transforms.ToTensor(),
+        #     # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        # ])
+
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
-            # transforms.RandomApply(transform_list, p=0.5),
+            # transforms.RandomRotation(degrees=10),
+            # transforms.RandomHorizontalFlip(),
+            # transforms.RandomVerticalFlip(),
+            # transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+            # transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
             transforms.ToTensor(),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
+
         image = transform(image)
 
         return image, label

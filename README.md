@@ -12,3 +12,8 @@
 # Notice
 * use gaussian blur before transfer to hsv helps
 * normalize the image before feeding to model
+
+
+# Skill
+* use "ReduceLROnPlateau" help improve from 72 to 84
+* 
