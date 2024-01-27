@@ -14,8 +14,5 @@
 * normalize the image before feeding to model
 
 # test
-<<<<<<< HEAD
 # test
-=======
->>>>>>> main
 # test
